@@ -1,9 +1,9 @@
 import { getAuth } from "@clerk/remix/ssr.server";
 import { useLoaderData } from "@remix-run/react";
 import { LoaderFunction, json, type MetaFunction } from "@remix-run/node";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import db from "~/.server/db";
-import { joinedProject, submissions } from "~/.server/schema";
+import { joinedProject, leaderboard, submissions } from "~/.server/schema";
 import Leaderboard from "~/lib/leaderboard";
 import Progress from "~/lib/progress";
 import ProjectGrid from "~/lib/project-grid";
@@ -17,7 +17,7 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader: LoaderFunction = async (args) => {
-  const {userId} = await getAuth(args)
+  const { userId } = await getAuth(args)
   if (!userId) {
     return json({ completed_projects_count: -1, joined_projects_count: -1 })
   }
@@ -29,8 +29,7 @@ export const loader: LoaderFunction = async (args) => {
   const completed_projects_count = completed_projects.length
   const joined_projects_count = joined_projects.length
 
-  console.log(completed_projects.length)
-  console.log(joined_projects.length)
+  const lb = await db.select().from(leaderboard) // get everyone leaderboard information, and then calculate rank
 
   return json({ completed_projects_count, joined_projects_count })
 }
@@ -43,7 +42,7 @@ export default function Index() {
     projects_completed: 5,
     total_score: 1000
   }]
-  
+
   const serverData = useLoaderData<typeof loader>();
 
   return (
